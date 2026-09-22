@@ -46,83 +46,104 @@ func assertSamePost(t *testing.T, got, want *post.Post) {
 	}
 }
 
-func TestPostRepository_CreateAndFindByID_RoundTrips(t *testing.T) {
+func TestPostRepositoryCreate(t *testing.T) {
 	ctx := context.Background()
-	tx := newTestTx(t)
-	repo := NewPostRepository(tx)
-	p := newPost(t, newTestUser(t, tx).ID(), "hello", "")
 
-	created, err := repo.Create(ctx, p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSamePost(t, created, p)
+	t.Run("保存した内容がそのまま返る", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewPostRepository(tx)
+		p := newPost(t, newTestUser(t, tx).ID(), "hello", "")
 
-	got, err := repo.FindByID(ctx, p.ID())
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSamePost(t, got, p)
+		created, err := repo.Create(ctx, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSamePost(t, created, p)
+	})
+
+	t.Run("画像のみの投稿は body が NULL で保存される", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewPostRepository(tx)
+		p := newPost(t, newTestUser(t, tx).ID(), "", "https://example.com/a.png")
+
+		if _, err := repo.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+
+		var bodyIsNull bool
+		err := tx.QueryRow(ctx, "select body is null from posts where id = $1", toPgUUID(p.ID())).Scan(&bodyIsNull)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bodyIsNull {
+			t.Error("空文字の body が NULL として保存されていない")
+		}
+	})
+
+	t.Run("同じ投稿を2回作ると ErrPostAlreadyExists", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewPostRepository(tx)
+		p := newPost(t, newTestUser(t, tx).ID(), "hello", "")
+
+		if _, err := repo.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+		_, err := repo.Create(ctx, p)
+		if !errors.Is(err, post.ErrPostAlreadyExists) {
+			t.Fatalf("err = %v, want %v", err, post.ErrPostAlreadyExists)
+		}
+	})
+
+	t.Run("存在しないユーザーの投稿は ErrUserNotFound", func(t *testing.T) {
+		repo := NewPostRepository(newTestTx(t))
+		p := newPost(t, uuid.New(), "hello", "")
+
+		_, err := repo.Create(ctx, p)
+		if !errors.Is(err, post.ErrUserNotFound) {
+			t.Fatalf("err = %v, want %v", err, post.ErrUserNotFound)
+		}
+	})
 }
 
-func TestPostRepository_ImageOnlyPost_StoresBodyAsNull(t *testing.T) {
+func TestPostRepositoryFindByID(t *testing.T) {
 	ctx := context.Background()
-	tx := newTestTx(t)
-	repo := NewPostRepository(tx)
-	p := newPost(t, newTestUser(t, tx).ID(), "", "https://example.com/a.png")
 
-	if _, err := repo.Create(ctx, p); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("保存した投稿を取り出せる", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewPostRepository(tx)
+		p := newPost(t, newTestUser(t, tx).ID(), "hello", "")
+		if _, err := repo.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
 
-	var bodyIsNull bool
-	err := tx.QueryRow(ctx, "select body is null from posts where id = $1", toPgUUID(p.ID())).Scan(&bodyIsNull)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bodyIsNull {
-		t.Error("空文字の body が NULL として保存されていない")
-	}
+		got, err := repo.FindByID(ctx, p.ID())
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSamePost(t, got, p)
+	})
 
-	got, err := repo.FindByID(ctx, p.ID())
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSamePost(t, got, p)
-}
+	t.Run("画像のみの投稿は body が空文字で戻る", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewPostRepository(tx)
+		p := newPost(t, newTestUser(t, tx).ID(), "", "https://example.com/a.png")
+		if _, err := repo.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
 
-func TestPostRepository_Create_DuplicateReturnsErrPostAlreadyExists(t *testing.T) {
-	ctx := context.Background()
-	tx := newTestTx(t)
-	repo := NewPostRepository(tx)
-	p := newPost(t, newTestUser(t, tx).ID(), "hello", "")
+		got, err := repo.FindByID(ctx, p.ID())
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSamePost(t, got, p)
+	})
 
-	if _, err := repo.Create(ctx, p); err != nil {
-		t.Fatal(err)
-	}
-	_, err := repo.Create(ctx, p)
-	if !errors.Is(err, post.ErrPostAlreadyExists) {
-		t.Fatalf("err = %v, want %v", err, post.ErrPostAlreadyExists)
-	}
-}
+	t.Run("存在しない ID は ErrPostNotFound", func(t *testing.T) {
+		repo := NewPostRepository(newTestTx(t))
 
-func TestPostRepository_Create_UnknownUserReturnsErrUserNotFound(t *testing.T) {
-	tx := newTestTx(t)
-	repo := NewPostRepository(tx)
-	p := newPost(t, uuid.New(), "hello", "")
-
-	_, err := repo.Create(context.Background(), p)
-	if !errors.Is(err, post.ErrUserNotFound) {
-		t.Fatalf("err = %v, want %v", err, post.ErrUserNotFound)
-	}
-}
-
-func TestPostRepository_FindByID_UnknownIDReturnsErrPostNotFound(t *testing.T) {
-	tx := newTestTx(t)
-	repo := NewPostRepository(tx)
-
-	_, err := repo.FindByID(context.Background(), uuid.New())
-	if !errors.Is(err, post.ErrPostNotFound) {
-		t.Fatalf("err = %v, want %v", err, post.ErrPostNotFound)
-	}
+		_, err := repo.FindByID(ctx, uuid.New())
+		if !errors.Is(err, post.ErrPostNotFound) {
+			t.Fatalf("err = %v, want %v", err, post.ErrPostNotFound)
+		}
+	})
 }

@@ -50,71 +50,92 @@ func assertSameUser(t *testing.T, got, want *user.User) {
 	}
 }
 
-func TestUserRepository_CreateAndFindByID_RoundTrips(t *testing.T) {
+func TestUserRepositoryCreate(t *testing.T) {
 	ctx := context.Background()
-	repo := NewUserRepository(newTestTx(t))
-	u := newUser(t, "alice_01", "hello", "https://example.com/a.png")
 
-	created, err := repo.Create(ctx, u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSameUser(t, created, u)
+	t.Run("保存した内容がそのまま返る", func(t *testing.T) {
+		repo := NewUserRepository(newTestTx(t))
+		u := newUser(t, "alice_01", "hello", "https://example.com/a.png")
 
-	got, err := repo.FindByID(ctx, u.ID())
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSameUser(t, got, u)
+		created, err := repo.Create(ctx, u)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSameUser(t, created, u)
+	})
+
+	t.Run("空のプロフィールは NULL で保存される", func(t *testing.T) {
+		tx := newTestTx(t)
+		repo := NewUserRepository(tx)
+		u := newUser(t, "bob_02", "", "")
+
+		if _, err := repo.Create(ctx, u); err != nil {
+			t.Fatal(err)
+		}
+
+		var bothNull bool
+		err := tx.QueryRow(ctx,
+			"select description is null and avatar_url is null from users where id = $1",
+			toPgUUID(u.ID()),
+		).Scan(&bothNull)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bothNull {
+			t.Error("空文字が NULL として保存されていない")
+		}
+	})
+
+	t.Run("username が重複すると ErrUsernameAlreadyExists", func(t *testing.T) {
+		repo := NewUserRepository(newTestTx(t))
+
+		if _, err := repo.Create(ctx, newUser(t, "carol_03", "", "")); err != nil {
+			t.Fatal(err)
+		}
+		_, err := repo.Create(ctx, newUser(t, "carol_03", "", ""))
+		if !errors.Is(err, user.ErrUsernameAlreadyExists) {
+			t.Fatalf("err = %v, want %v", err, user.ErrUsernameAlreadyExists)
+		}
+	})
 }
 
-func TestUserRepository_EmptyProfile_StoredAsNull(t *testing.T) {
+func TestUserRepositoryFindByID(t *testing.T) {
 	ctx := context.Background()
-	tx := newTestTx(t)
-	repo := NewUserRepository(tx)
-	u := newUser(t, "bob_02", "", "")
 
-	if _, err := repo.Create(ctx, u); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("保存したユーザーを取り出せる", func(t *testing.T) {
+		repo := NewUserRepository(newTestTx(t))
+		u := newUser(t, "alice_01", "hello", "https://example.com/a.png")
+		if _, err := repo.Create(ctx, u); err != nil {
+			t.Fatal(err)
+		}
 
-	var bothNull bool
-	err := tx.QueryRow(ctx,
-		"select description is null and avatar_url is null from users where id = $1",
-		toPgUUID(u.ID()),
-	).Scan(&bothNull)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bothNull {
-		t.Error("空文字が NULL として保存されていない")
-	}
+		got, err := repo.FindByID(ctx, u.ID())
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSameUser(t, got, u)
+	})
 
-	got, err := repo.FindByID(ctx, u.ID())
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertSameUser(t, got, u)
-}
+	t.Run("空のプロフィールは空文字で戻る", func(t *testing.T) {
+		repo := NewUserRepository(newTestTx(t))
+		u := newUser(t, "bob_02", "", "")
+		if _, err := repo.Create(ctx, u); err != nil {
+			t.Fatal(err)
+		}
 
-func TestUserRepository_Create_DuplicateUsernameReturnsErr(t *testing.T) {
-	ctx := context.Background()
-	repo := NewUserRepository(newTestTx(t))
+		got, err := repo.FindByID(ctx, u.ID())
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertSameUser(t, got, u)
+	})
 
-	if _, err := repo.Create(ctx, newUser(t, "carol_03", "", "")); err != nil {
-		t.Fatal(err)
-	}
-	_, err := repo.Create(ctx, newUser(t, "carol_03", "", ""))
-	if !errors.Is(err, user.ErrUsernameAlreadyExists) {
-		t.Fatalf("err = %v, want %v", err, user.ErrUsernameAlreadyExists)
-	}
-}
+	t.Run("存在しない ID は ErrUserNotFound", func(t *testing.T) {
+		repo := NewUserRepository(newTestTx(t))
 
-func TestUserRepository_FindByID_UnknownIDReturnsErrUserNotFound(t *testing.T) {
-	repo := NewUserRepository(newTestTx(t))
-
-	_, err := repo.FindByID(context.Background(), uuid.New())
-	if !errors.Is(err, user.ErrUserNotFound) {
-		t.Fatalf("err = %v, want %v", err, user.ErrUserNotFound)
-	}
+		_, err := repo.FindByID(ctx, uuid.New())
+		if !errors.Is(err, user.ErrUserNotFound) {
+			t.Fatalf("err = %v, want %v", err, user.ErrUserNotFound)
+		}
+	})
 }

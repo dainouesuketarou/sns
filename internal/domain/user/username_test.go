@@ -34,7 +34,7 @@ func TestNewUserName(t *testing.T) {
 	}
 }
 
-func TestRebuildUserName_SkipsValidation(t *testing.T) {
+func TestRebuildUserName(t *testing.T) {
 	n := RebuildUserName("")
 	if n.String() != "" {
 		t.Errorf("String() = %q", n.String())
