@@ -1,0 +1,22 @@
+# 環境変数（DB 接続情報）
+.env
+.env.*
+!.env.example
+
+# ビルド成果物
+/dist/
+/bin/
+*.exe
+
+# テスト・カバレッジ
+*.test
+*.out
+coverage.*
+
+# エディタ・OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# sqlc の生成コードはコミットする（clone してすぐ go build が通るようにするため）
