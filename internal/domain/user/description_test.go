@@ -42,7 +42,7 @@ func TestDescription_IsSet(t *testing.T) {
 	}
 }
 
-func TestRebuildDescription_検証しない(t *testing.T) {
+func TestRebuildDescription_SkipsValidation(t *testing.T) {
 	d := RebuildDescription(strings.Repeat("あ", MaxDescriptionLength+1))
 	if !d.IsSet() {
 		t.Error("IsSet() = false")

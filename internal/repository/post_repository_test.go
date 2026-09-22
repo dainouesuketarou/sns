@@ -46,7 +46,7 @@ func assertSamePost(t *testing.T, got, want *post.Post) {
 	}
 }
 
-func TestPostRepository_CreateしてFindByIDで往復できる(t *testing.T) {
+func TestPostRepository_CreateAndFindByID_RoundTrips(t *testing.T) {
 	ctx := context.Background()
 	tx := newTestTx(t)
 	repo := NewPostRepository(tx)
@@ -65,7 +65,7 @@ func TestPostRepository_CreateしてFindByIDで往復できる(t *testing.T) {
 	assertSamePost(t, got, p)
 }
 
-func TestPostRepository_画像のみの投稿はbodyがNULLで往復する(t *testing.T) {
+func TestPostRepository_ImageOnlyPost_StoresBodyAsNull(t *testing.T) {
 	ctx := context.Background()
 	tx := newTestTx(t)
 	repo := NewPostRepository(tx)
@@ -91,7 +91,7 @@ func TestPostRepository_画像のみの投稿はbodyがNULLで往復する(t *te
 	assertSamePost(t, got, p)
 }
 
-func TestPostRepository_同じ投稿を2回CreateするとErrPostAlreadyExists(t *testing.T) {
+func TestPostRepository_Create_DuplicateReturnsErrPostAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	tx := newTestTx(t)
 	repo := NewPostRepository(tx)
@@ -106,7 +106,7 @@ func TestPostRepository_同じ投稿を2回CreateするとErrPostAlreadyExists(t
 	}
 }
 
-func TestPostRepository_存在しないユーザーの投稿はErrUserNotFound(t *testing.T) {
+func TestPostRepository_Create_UnknownUserReturnsErrUserNotFound(t *testing.T) {
 	tx := newTestTx(t)
 	repo := NewPostRepository(tx)
 	p := newPost(t, uuid.New(), "hello", "")
@@ -117,7 +117,7 @@ func TestPostRepository_存在しないユーザーの投稿はErrUserNotFound(t
 	}
 }
 
-func TestPostRepository_存在しないIDはErrPostNotFound(t *testing.T) {
+func TestPostRepository_FindByID_UnknownIDReturnsErrPostNotFound(t *testing.T) {
 	tx := newTestTx(t)
 	repo := NewPostRepository(tx)
 

@@ -48,5 +48,6 @@ CHECK 制約は、ドメインクラス側の検証と意図的に重複させ�
 - 一覧取得の絞り込みは SQL の WHERE でやる: 取得後に Go 側で弾くと、LIMIT n 件を返すのに何件読めばいいか決まらずページングが壊れる
 - 一覧のページングはカーソル方式: `order by created_at desc, id desc` と `(created_at, id)` の組で位置を表す。`created_at` だけだと同時刻の行を取りこぼす
 - 値オブジェクトにしたものは、エンティティのゲッターでも値オブジェクトのまま返す: `AvatarURL() string` ではなく `AvatarURL() AvatarURL`。裸のプリミティブを返すと、外でそれを検証したり組み立て直したりする誘惑が生まれ、ルールが分散する
+- テスト名: 関数名は英語（`TestUserRepository_FindByID_UnknownIDReturnsErrUserNotFound` のように `Test対象_条件_期待` の順）。ケースの説明（`t.Run` の第1引数）とエラーメッセージは日本語でよい。関数名を日本語にすると `go test -run` で打ちにくく、grep・補完・スタックトレースで扱いづらい
 - 貧血症の検出基準: エンティティから値を取り出して外で `if` を書き始めたら、その判断はエンティティのメソッドにする。例) resolver で `if time.Since(u.CreatedAt()) < 24*time.Hour && !u.Description().IsSet()` と書きたくなったら `u.IsNewcomer(now)` として User 側に置く。ゲッターの数が多いこと自体は問題ではなく、判断がどこにあるかで見る
 - 同じ意味に見えるエラーは名前で区別する: 「検索して見つからない」（`user.ErrUserNotFound`）、「フォロー相手が実在しない」（`follow.ErrFolloweeNotFound`）、「認証済みのはずの自分が実在しない＝異常系」（`follow.ErrFollowerNotFound`）は API 層で別のメッセージにするため、同名にせず分ける

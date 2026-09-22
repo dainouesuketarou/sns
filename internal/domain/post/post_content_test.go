@@ -37,7 +37,7 @@ func TestNewPostContent(t *testing.T) {
 	}
 }
 
-func TestNewPostContent_本文の前後の空白を保持する(t *testing.T) {
+func TestNewPostContent_PreservesSurroundingWhitespace(t *testing.T) {
 	c, err := NewPostContent("  hello\n", "")
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestNewPostContent_本文の前後の空白を保持する(t *testing.T) {
 	}
 }
 
-func TestRebuildPostContent_検証しない(t *testing.T) {
+func TestRebuildPostContent_SkipsValidation(t *testing.T) {
 	c := RebuildPostContent("", "not a url")
 	if c.Body() != "" || c.ImageURL() != "not a url" {
 		t.Errorf("Body() = %q, ImageURL() = %q", c.Body(), c.ImageURL())

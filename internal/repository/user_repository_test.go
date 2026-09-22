@@ -50,7 +50,7 @@ func assertSameUser(t *testing.T, got, want *user.User) {
 	}
 }
 
-func TestUserRepository_CreateしてFindByIDで往復できる(t *testing.T) {
+func TestUserRepository_CreateAndFindByID_RoundTrips(t *testing.T) {
 	ctx := context.Background()
 	repo := NewUserRepository(newTestTx(t))
 	u := newUser(t, "alice_01", "hello", "https://example.com/a.png")
@@ -68,7 +68,7 @@ func TestUserRepository_CreateしてFindByIDで往復できる(t *testing.T) {
 	assertSameUser(t, got, u)
 }
 
-func TestUserRepository_プロフィール空ならNULLで往復する(t *testing.T) {
+func TestUserRepository_EmptyProfile_StoredAsNull(t *testing.T) {
 	ctx := context.Background()
 	tx := newTestTx(t)
 	repo := NewUserRepository(tx)
@@ -97,7 +97,7 @@ func TestUserRepository_プロフィール空ならNULLで往復する(t *testin
 	assertSameUser(t, got, u)
 }
 
-func TestUserRepository_username重複はErrUsernameAlreadyExists(t *testing.T) {
+func TestUserRepository_Create_DuplicateUsernameReturnsErr(t *testing.T) {
 	ctx := context.Background()
 	repo := NewUserRepository(newTestTx(t))
 
@@ -110,7 +110,7 @@ func TestUserRepository_username重複はErrUsernameAlreadyExists(t *testing.T) 
 	}
 }
 
-func TestUserRepository_存在しないIDはErrUserNotFound(t *testing.T) {
+func TestUserRepository_FindByID_UnknownIDReturnsErrUserNotFound(t *testing.T) {
 	repo := NewUserRepository(newTestTx(t))
 
 	_, err := repo.FindByID(context.Background(), uuid.New())

@@ -36,7 +36,7 @@ func mustAvatarURL(t *testing.T, s string) AvatarURL {
 	return a
 }
 
-func TestNewUser_idが生成されcreatedAtは渡した時刻になる(t *testing.T) {
+func TestNewUser_GeneratesIDAndUsesGivenTime(t *testing.T) {
 	u := NewUser(mustUserName(t, "alice"), Description{}, AvatarURL{}, fixedNow)
 
 	if u.ID() == uuid.Nil {

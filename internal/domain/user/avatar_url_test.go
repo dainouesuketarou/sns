@@ -47,7 +47,7 @@ func TestAvatarURL_IsSet(t *testing.T) {
 	}
 }
 
-func TestRebuildAvatarURL_検証しない(t *testing.T) {
+func TestRebuildAvatarURL_SkipsValidation(t *testing.T) {
 	a := RebuildAvatarURL("not a url")
 	if a.String() != "not a url" {
 		t.Errorf("String() = %q", a.String())
