@@ -32,7 +32,7 @@ func TestNewAvatarURL(t *testing.T) {
 	}
 }
 
-func TestAvatarURL_IsSet(t *testing.T) {
+func TestAvatarURLIsSet(t *testing.T) {
 	empty, err := NewAvatarURL("")
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestAvatarURL_IsSet(t *testing.T) {
 	}
 }
 
-func TestRebuildAvatarURL_SkipsValidation(t *testing.T) {
+func TestRebuildAvatarURL(t *testing.T) {
 	a := RebuildAvatarURL("not a url")
 	if a.String() != "not a url" {
 		t.Errorf("String() = %q", a.String())

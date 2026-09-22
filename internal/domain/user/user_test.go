@@ -36,18 +36,23 @@ func mustAvatarURL(t *testing.T, s string) AvatarURL {
 	return a
 }
 
-func TestNewUser_GeneratesIDAndUsesGivenTime(t *testing.T) {
+func TestNewUser(t *testing.T) {
 	u := NewUser(mustUserName(t, "alice"), Description{}, AvatarURL{}, fixedNow)
 
-	if u.ID() == uuid.Nil {
-		t.Error("ID() が生成されていない")
-	}
-	if !u.CreatedAt().Equal(fixedNow) {
-		t.Errorf("CreatedAt() = %v, want %v", u.CreatedAt(), fixedNow)
-	}
+	t.Run("id が生成される", func(t *testing.T) {
+		if u.ID() == uuid.Nil {
+			t.Error("ID() が生成されていない")
+		}
+	})
+
+	t.Run("createdAt は渡した時刻になる", func(t *testing.T) {
+		if !u.CreatedAt().Equal(fixedNow) {
+			t.Errorf("CreatedAt() = %v, want %v", u.CreatedAt(), fixedNow)
+		}
+	})
 }
 
-func TestUser_UpdateProfile(t *testing.T) {
+func TestUserUpdateProfile(t *testing.T) {
 	u := NewUser(mustUserName(t, "alice"), mustDescription(t, "before"), AvatarURL{}, fixedNow)
 
 	u.UpdateProfile(mustDescription(t, "after"), mustAvatarURL(t, "https://example.com/a.png"))

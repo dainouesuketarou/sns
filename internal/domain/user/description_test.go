@@ -30,7 +30,7 @@ func TestNewDescription(t *testing.T) {
 	}
 }
 
-func TestDescription_IsSet(t *testing.T) {
+func TestDescriptionIsSet(t *testing.T) {
 	empty := mustDescription(t, "")
 	if empty.IsSet() {
 		t.Error("空なのに IsSet() = true")
@@ -42,7 +42,7 @@ func TestDescription_IsSet(t *testing.T) {
 	}
 }
 
-func TestRebuildDescription_SkipsValidation(t *testing.T) {
+func TestRebuildDescription(t *testing.T) {
 	d := RebuildDescription(strings.Repeat("あ", MaxDescriptionLength+1))
 	if !d.IsSet() {
 		t.Error("IsSet() = false")
