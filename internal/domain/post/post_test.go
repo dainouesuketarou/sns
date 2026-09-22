@@ -22,13 +22,20 @@ func TestNewPost(t *testing.T) {
 		}
 	})
 
-	t.Run("id が生成され、createdAt は渡した時刻になる", func(t *testing.T) {
+	t.Run("id が生成される", func(t *testing.T) {
 		p, err := NewPost(uuid.New(), content, true, now)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if p.ID() == uuid.Nil {
 			t.Error("ID() が生成されていない")
+		}
+	})
+
+	t.Run("createdAt は渡した時刻になる", func(t *testing.T) {
+		p, err := NewPost(uuid.New(), content, true, now)
+		if err != nil {
+			t.Fatal(err)
 		}
 		if !p.CreatedAt().Equal(now) {
 			t.Errorf("CreatedAt() = %v, want %v", p.CreatedAt(), now)
