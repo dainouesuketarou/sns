@@ -1,8 +1,6 @@
 package user
 
 import (
-	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -20,38 +18,27 @@ func mustUserName(t *testing.T, s string) UserName {
 	return n
 }
 
-func TestNewUser(t *testing.T) {
-	name := mustUserName(t, "alice")
-
-	tests := []struct {
-		label       string
-		description string
-		avatarURL   string
-		wantErr     error
-	}{
-		{label: "プロフィール空", description: "", avatarURL: "", wantErr: nil},
-		{label: "通常", description: "hello", avatarURL: "https://example.com/a.png", wantErr: nil},
-		{label: "description 上限超え", description: strings.Repeat("あ", MaxDescriptionLength+1), avatarURL: "", wantErr: ErrDescriptionTooLong},
-		{label: "avatar_url が URL でない", description: "", avatarURL: "foo", wantErr: ErrInvalidAvatarURL},
-		{label: "avatar_url が http(s) 以外", description: "", avatarURL: "ftp://example.com/a.png", wantErr: ErrInvalidAvatarURL},
-		{label: "avatar_url 上限超え", description: "", avatarURL: "https://example.com/" + strings.Repeat("a", MaxAvatarURLLength), wantErr: ErrAvatarURLTooLong},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.label, func(t *testing.T) {
-			_, err := NewUser(name, tt.description, tt.avatarURL, fixedNow)
-			if !errors.Is(err, tt.wantErr) {
-				t.Fatalf("err = %v, want %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestNewUser_idが生成されcreatedAtは渡した時刻になる(t *testing.T) {
-	u, err := NewUser(mustUserName(t, "alice"), "", "", fixedNow)
+func mustDescription(t *testing.T, s string) Description {
+	t.Helper()
+	d, err := NewDescription(s)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return d
+}
+
+func mustAvatarURL(t *testing.T, s string) AvatarURL {
+	t.Helper()
+	a, err := NewAvatarURL(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a
+}
+
+func TestNewUser_GeneratesIDAndUsesGivenTime(t *testing.T) {
+	u := NewUser(mustUserName(t, "alice"), Description{}, AvatarURL{}, fixedNow)
+
 	if u.ID() == uuid.Nil {
 		t.Error("ID() が生成されていない")
 	}
@@ -61,29 +48,14 @@ func TestNewUser_idが生成されcreatedAtは渡した時刻になる(t *testin
 }
 
 func TestUser_UpdateProfile(t *testing.T) {
-	u, err := NewUser(mustUserName(t, "alice"), "before", "", fixedNow)
-	if err != nil {
-		t.Fatal(err)
+	u := NewUser(mustUserName(t, "alice"), mustDescription(t, "before"), AvatarURL{}, fixedNow)
+
+	u.UpdateProfile(mustDescription(t, "after"), mustAvatarURL(t, "https://example.com/a.png"))
+
+	if u.Description().String() != "after" {
+		t.Errorf("Description() = %q", u.Description().String())
 	}
-
-	t.Run("不正な値なら変更されない", func(t *testing.T) {
-		if err := u.UpdateProfile("after", "foo"); !errors.Is(err, ErrInvalidAvatarURL) {
-			t.Fatalf("err = %v, want %v", err, ErrInvalidAvatarURL)
-		}
-		if u.Description() != "before" {
-			t.Errorf("Description() = %q, want %q", u.Description(), "before")
-		}
-	})
-
-	t.Run("正しい値なら変更される", func(t *testing.T) {
-		if err := u.UpdateProfile("after", "https://example.com/a.png"); err != nil {
-			t.Fatal(err)
-		}
-		if u.Description() != "after" {
-			t.Errorf("Description() = %q", u.Description())
-		}
-		if u.AvatarURL() != "https://example.com/a.png" {
-			t.Errorf("AvatarURL() = %q", u.AvatarURL())
-		}
-	})
+	if u.AvatarURL().String() != "https://example.com/a.png" {
+		t.Errorf("AvatarURL() = %q", u.AvatarURL().String())
+	}
 }

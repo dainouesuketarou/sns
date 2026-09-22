@@ -51,10 +51,7 @@ func newTestUser(t *testing.T, tx pgx.Tx) *user.User {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := user.NewUser(name, "", "", fixedNow)
-	if err != nil {
-		t.Fatal(err)
-	}
+	u := user.NewUser(name, user.Description{}, user.AvatarURL{}, fixedNow)
 
 	created, err := NewUserRepository(tx).Create(context.Background(), u)
 	if err != nil {
