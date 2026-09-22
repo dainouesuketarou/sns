@@ -18,11 +18,15 @@ func newUser(t *testing.T, username, description, avatarURL string) *user.User {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := user.NewUser(name, description, avatarURL, fixedNow)
+	desc, err := user.NewDescription(description)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return u
+	avatar, err := user.NewAvatarURL(avatarURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return user.NewUser(name, desc, avatar, fixedNow)
 }
 
 func assertSameUser(t *testing.T, got, want *user.User) {
@@ -35,10 +39,10 @@ func assertSameUser(t *testing.T, got, want *user.User) {
 		t.Errorf("Name() = %v, want %v", got.Name(), want.Name())
 	}
 	if got.Description() != want.Description() {
-		t.Errorf("Description() = %q, want %q", got.Description(), want.Description())
+		t.Errorf("Description() = %q, want %q", got.Description().String(), want.Description().String())
 	}
 	if got.AvatarURL() != want.AvatarURL() {
-		t.Errorf("AvatarURL() = %q, want %q", got.AvatarURL(), want.AvatarURL())
+		t.Errorf("AvatarURL() = %q, want %q", got.AvatarURL().String(), want.AvatarURL().String())
 	}
 	// timestamptz はマイクロ秒精度なので、Go 側のナノ秒を切り捨ててから比較する。
 	if !got.CreatedAt().Equal(want.CreatedAt().Truncate(time.Microsecond)) {

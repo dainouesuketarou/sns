@@ -28,8 +28,8 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 	row, err := r.q.CreateUser(ctx, sqlcgen.CreateUserParams{
 		ID:          toPgUUID(u.ID()),
 		Username:    u.Name().String(),
-		Description: toPgText(u.Description()),
-		AvatarUrl:   toPgText(u.AvatarURL()),
+		Description: toPgText(u.Description().String()),
+		AvatarUrl:   toPgText(u.AvatarURL().String()),
 		CreatedAt:   toPgTimestamptz(u.CreatedAt()),
 	})
 	if err != nil {
@@ -65,8 +65,8 @@ func toDomainUser(row sqlcgen.User) *user.User {
 	return user.RebuildUser(
 		fromPgUUID(row.ID),
 		user.RebuildUserName(row.Username),
-		fromPgText(row.Description),
-		fromPgText(row.AvatarUrl),
+		user.RebuildDescription(fromPgText(row.Description)),
+		user.RebuildAvatarURL(fromPgText(row.AvatarUrl)),
 		fromPgTimestamptz(row.CreatedAt),
 	)
 }
